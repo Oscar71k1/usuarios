@@ -171,5 +171,13 @@ app.get('/api/health', (req, res) => {
   res.json({ mensaje: 'Microservicio de Usuarios funcionando', timestamp: new Date().toISOString() });
 });
 
+// Iniciar servidor solo si no estamos en Vercel
+if (require.main === module) {
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`🚀 Microservicio de Usuarios ejecutándose en puerto ${PORT}`);
+    console.log(`📊 Health check disponible en: http://localhost:${PORT}/api/health`);
+  });
+}
+
 // Exportar app para Vercel
 module.exports = app;
