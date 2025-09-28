@@ -1,4 +1,3 @@
-// usuarios/index.js
 const express = require('express');
 const cors = require('cors');
 const bcrypt = require('bcrypt');
@@ -7,18 +6,17 @@ const admin = require('firebase-admin');
 require('dotenv').config();
 
 const app = express();
+const PORT = process.env.PORT || 3001;
 
-// Middleware
 app.use(cors());
 app.use(express.json());
 
-// Configuración Firebase Admin
 let db;
 try {
   const serviceAccount = {
     type: "service_account",
-    project_id: "micro-7f26b",
-    private_key_id: "7777c8b7332b5f939c5f2178d1ecb3e852a5fa34",
+    project_id: process.env.FIREBASE_PROJECT_ID,
+    private_key_id: process.env.FIREBASE_PRIVATE_KEY_ID,
     private_key: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
     client_email: process.env.FIREBASE_CLIENT_EMAIL,
     client_id: process.env.FIREBASE_CLIENT_ID,
@@ -32,16 +30,20 @@ try {
   db = admin.firestore();
   console.log('✅ Firebase Admin inicializado correctamente');
 } catch (error) {
-  console.log('⚠️  Firebase no configurado. Usando datos en memoria.');
+  console.log('⚠️ Firebase no configurado. Usando memoria para desarrollo.');
   db = null;
 }
 
-// Datos en memoria para desarrollo
 let usuariosEnMemoria = [
-  { id: '1', nombre: 'Admin Sistema', email: 'admin@universidad.com', contraseña: '$2b$10$rQZ8K9vL2mN3pO4q...', rol: 'Admin' }
+  {
+    id: '1',
+    nombre: 'Admin Sistema',
+    email: 'admin@universidad.com',
+    contraseña: '$2b$10$rQZ8K9vL2mN3pO4q...',
+    rol: 'Admin'
+  }
 ];
 
-// Función para generar JWT
 function generarToken(usuario) {
   return jwt.sign(
     { id: usuario.id, email: usuario.email, rol: usuario.rol },
@@ -50,7 +52,6 @@ function generarToken(usuario) {
   );
 }
 
-// Middleware de autenticación
 function autenticarToken(req, res, next) {
   const token = req.headers['authorization']?.split(' ')[1];
   if (!token) return res.status(401).json({ error: 'Token de acceso requerido' });
@@ -64,7 +65,6 @@ function autenticarToken(req, res, next) {
 
 /* ===== RUTAS CON PREFIJO /api ===== */
 
-// Registro de usuario
 app.post('/api/registro', async (req, res) => {
   try {
     const { nombre, email, contraseña, rol = 'Alumno' } = req.body;
@@ -78,6 +78,7 @@ app.post('/api/registro', async (req, res) => {
     } else {
       usuarioExistente = usuariosEnMemoria.find(u => u.email === email);
     }
+
     if (usuarioExistente) return res.status(400).json({ error: 'El usuario ya existe' });
 
     const contraseñaEncriptada = await bcrypt.hash(contraseña, 10);
@@ -101,7 +102,6 @@ app.post('/api/registro', async (req, res) => {
   }
 });
 
-// Login de usuario
 app.post('/api/login', async (req, res) => {
   try {
     const { email, contraseña } = req.body;
@@ -128,7 +128,6 @@ app.post('/api/login', async (req, res) => {
   }
 });
 
-// Perfil de usuario
 app.get('/api/perfil/:id', autenticarToken, async (req, res) => {
   try {
     const { id } = req.params;
@@ -149,7 +148,6 @@ app.get('/api/perfil/:id', autenticarToken, async (req, res) => {
   }
 });
 
-// Validar usuario
 app.get('/api/validar/:id', async (req, res) => {
   try {
     const { id } = req.params;
@@ -169,7 +167,6 @@ app.get('/api/validar/:id', async (req, res) => {
   }
 });
 
-// Ruta de salud
 app.get('/api/health', (req, res) => {
   res.json({ mensaje: 'Microservicio de Usuarios funcionando', timestamp: new Date().toISOString() });
 });
